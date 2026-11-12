@@ -92,11 +92,15 @@ export async function createFirebaseAdapter() {
     async becomeCourier(data) {
       if (!vehicleById(data.vehicleType)) fail('err.vehicle');
       if (text(data.name, 80).length < 2) fail('err.name');
-      if (text(data.plate, 20).length < 4) fail('err.plate');
+      // Plate and licence are optional for motorbikes, required for other vehicles.
+      const strict = data.vehicleType !== 'moto';
+      if (text(data.plate, 20).length < 4 && (strict || text(data.plate, 20))) fail('err.plate');
+      if (strict && !data.hasLicense) fail('err.license');
       // Drivers start as 'pending'; an admin flips this to 'approved'.
       await F.updateDoc(userRef(), {
-        role: 'courier', courierStatus: 'pending', name: text(data.name, 80), commune: text(data.commune, 40),
+        role: 'courier', courierStatus: 'pending', name: text(data.name, 80),
         vehicleType: data.vehicleType, plate: text(data.plate, 20).toUpperCase(),
+        hasLicense: Boolean(data.hasLicense),
       });
       return auth.getProfile();
     },

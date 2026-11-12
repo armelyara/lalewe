@@ -4,7 +4,7 @@ import { CONFIG } from '../config.js';
 // others are displayed as "coming soon". Drivers can register for any of them.
 export const VEHICLES = [
   { id: 'moto', img: 'img/moto.png', base: 500, perKm: 150, min: 1000, stopFee: 300, available: true },
-  { id: 'tricycle', img: 'img/tricycle.png', base: 2000, perKm: 300, min: 3000, stopFee: 500, available: false },
+  { id: 'car', img: 'img/voiture.png', base: 1500, perKm: 250, min: 2500, stopFee: 500, available: false },
   { id: 'van', img: 'img/fourgon.png', base: 5000, perKm: 500, min: 8000, stopFee: 1000, available: false },
   { id: 'truck', img: 'img/camion.png', base: 15000, perKm: 900, min: 20000, stopFee: 2000, available: false },
 ];

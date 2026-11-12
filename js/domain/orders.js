@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { communeById, routeDistanceKm } from './geo.js';
+import { communeById, nearestCommune, routeDistanceKm } from './geo.js';
 import { commissionFor, quote } from './pricing.js';
 
 export const STATUS = {
@@ -53,13 +53,16 @@ const clean = (v, max) => String(v || '').trim().slice(0, max);
 function cleanStop(stop) {
   const out = {
     commune: clean(stop?.commune, 40),
-    landmark: clean(stop?.landmark, 200),
+    landmark: clean(stop?.landmark, 200), // place name or landmark, as picked or typed
+    detail: clean(stop?.detail, 200), // optional hint for the driver
     contactName: clean(stop?.contactName, 80),
     contactPhone: clean(stop?.contactPhone, 20),
   };
   if (Number.isFinite(stop?.lat) && Number.isFinite(stop?.lng)) {
     out.lat = stop.lat;
     out.lng = stop.lng;
+    // A point picked on the map or from a suggestion decides the commune.
+    if (!communeById(out.commune)) out.commune = nearestCommune(out).id;
   }
   return out;
 }
@@ -80,8 +83,8 @@ export function validateOrderInput(input) {
   if (stops.length < 2) errors.stops = 'err.stops';
   stops.forEach((stop, i) => {
     const isLast = i === stops.length - 1;
-    if (!communeById(stop.commune)) errors[`stops.${i}.commune`] = 'err.commune';
-    if (stop.landmark.length < 3) errors[`stops.${i}.landmark`] = 'err.landmark';
+    if (stop.landmark.length < 2) errors[`stops.${i}.landmark`] = 'err.landmark';
+    else if (!communeById(stop.commune)) errors[`stops.${i}.commune`] = 'err.place';
     if (stop.contactPhone || (isLast && i > 0)) {
       const phone = normalizePhone(stop.contactPhone);
       if (phone) stop.contactPhone = phone;
@@ -90,13 +93,16 @@ export function validateOrderInput(input) {
   });
   if (value.goodsAmount > 5_000_000) errors.goodsAmount = 'err.amount';
 
-  // The price only needs the communes, so it can show before the form is complete.
+  // Road distance from the routing service when available, else an estimate.
+  const km = Number(input?.routeKm);
+  const roadKm = Number.isFinite(km) && km >= 0.3 && km <= 300 ? Math.round(km * 10) / 10 : null;
+  // The price only needs the places, so it can show before the form is complete.
   let price = null;
   try {
     price = quote({
       vehicleId: value.vehicleType,
       serviceLevel: value.serviceLevel,
-      distanceKm: routeDistanceKm(stops),
+      distanceKm: roadKm ?? routeDistanceKm(stops),
       extraStops: stops.length - 2,
     });
   } catch (e) {

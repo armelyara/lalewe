@@ -24,7 +24,7 @@ for (const file of files) {
 }
 for (const k of ['pending', 'accepted', 'picked_up', 'delivered', 'cancelled']) assert.ok(`status.${k}` in STRINGS.fr);
 for (const k of ['topup', 'commission', 'commission_refund']) assert.ok(`tx.${k}` in STRINGS.fr);
-for (const k of ['moto', 'tricycle', 'van', 'truck']) assert.ok(`vehicle.${k}` in STRINGS.fr && `vehicle.cap.${k}` in STRINGS.fr);
+for (const k of ['moto', 'car', 'van', 'truck']) assert.ok(`vehicle.${k}` in STRINGS.fr && `vehicle.cap.${k}` in STRINGS.fr);
 
 // Domain
 assert.equal(normalizePhone('07 08 09 10 11'), '+2250708091011');
@@ -46,7 +46,15 @@ assert.ok(!canTransition('merchant', 'picked_up', 'cancelled'));
 assert.equal(validateOrderInput({}).errors.stops, 'err.stops');
 // The price shows as soon as the communes are known, before the form is complete.
 const partial = validateOrderInput({ stops: [{ commune: 'cocody' }, { commune: 'yopougon' }] });
-assert.ok(partial.price.total > 0 && partial.errors['stops.1.contactPhone']);
+assert.ok(partial.price.total > 0 && partial.errors['stops.1.landmark']);
+// A point picked on the map decides the commune; a typed place without a point is rejected.
+const pinned = validateOrderInput({ stops: [{ landmark: 'Pharmacie', lat: 5.34, lng: -4.09 }, { landmark: 'Marché', contactPhone: '0100000003' }] });
+assert.equal(pinned.value.stops[0].commune, 'yopougon');
+assert.equal(pinned.errors['stops.1.commune'], 'err.place');
+// The road distance from the routing service replaces the estimate when it is sane.
+const base = { stops: [{ commune: 'cocody', landmark: 'A' + 'b' }, { commune: 'yopougon', landmark: 'Cd', contactPhone: '0100000003' }] };
+assert.equal(validateOrderInput({ ...base, routeKm: 20 }).price.distanceKm, 20);
+assert.equal(validateOrderInput({ ...base, routeKm: 9999 }).price.distanceKm, validateOrderInput(base).price.distanceKm);
 
 // Full flow on the mock adapter: one shared DB, two sessions.
 const db = memory();
@@ -59,8 +67,12 @@ const signIn = async (api, phone) => {
 await rejectsWith(async () => (await merchant.auth.startPhoneSignIn('0700000001')).confirm('9999'), 'err.code');
 assert.equal((await signIn(merchant, '0700000001')).role, 'merchant');
 await signIn(driver, '0500000002');
-await rejectsWith(() => driver.auth.becomeCourier({ name: 'Koffi', vehicleType: 'moto', plate: '' }), 'err.plate');
-const courier = await driver.auth.becomeCourier({ name: 'Koffi Yao', vehicleType: 'moto', plate: '1234 ab 01', commune: 'adjame' });
+// Plate and licence: optional for a motorbike, required for other vehicles.
+await rejectsWith(() => driver.auth.becomeCourier({ name: 'Koffi', vehicleType: 'car', plate: '' , hasLicense: true }), 'err.plate');
+await rejectsWith(() => driver.auth.becomeCourier({ name: 'Koffi', vehicleType: 'car', plate: '1234 AB 01' }), 'err.license');
+await rejectsWith(() => driver.auth.becomeCourier({ name: 'Koffi', vehicleType: 'moto', plate: '12' }), 'err.plate');
+await rejectsWith(() => driver.auth.becomeCourier({ name: 'K', vehicleType: 'moto' }), 'err.name');
+const courier = await driver.auth.becomeCourier({ name: 'Koffi Yao', vehicleType: 'moto', plate: '1234 ab 01' });
 assert.equal(courier.role, 'courier');
 assert.equal(courier.plate, '1234 AB 01');
 

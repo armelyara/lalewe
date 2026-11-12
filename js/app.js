@@ -11,7 +11,7 @@ import * as orderDetail from './views/order-detail.js';
 import { setNext, takeNext } from './views/shared.js';
 import * as wallet from './views/wallet.js';
 
-const PUBLIC = ['/', '/login'];
+const PUBLIC = ['/', '/login', '/driver'];
 
 async function main() {
   const data = await createData();
@@ -63,11 +63,14 @@ async function main() {
     document.getElementById('topnav').setAttribute('aria-label', t('nav.main'));
     document.getElementById('tabbar').setAttribute('aria-label', t('nav.main'));
     document.getElementById('top-actions').innerHTML = `
-      <button type="button" class="pill" id="lang" aria-label="${esc(t('lang.switch'))}">${icon('language')}${getLang() === 'fr' ? 'EN' : 'FR'}</button>
+      ${data.mode === 'mock' ? `<span class="chip chip-demo">${esc(t('app.demo'))}</span>` : ''}
+      <div class="lang" role="group" aria-label="${esc(t('lang.switch'))}">
+        ${['fr', 'en'].map((l) => `<button type="button" data-lang="${l}" aria-pressed="${l === getLang()}">${l.toUpperCase()}</button>`).join('')}
+      </div>
       ${ctx.profile
         ? `<a class="pill" href="#/account">${icon('person')}<span class="pill-text">${esc(ctx.profile.name.split(' ')[0] || t('nav.account'))}</span></a>`
         : `<a class="pill solid" href="#/login">${esc(t('nav.login'))}</a>`}`;
-    document.getElementById('lang').addEventListener('click', () => setLang(getLang() === 'fr' ? 'en' : 'fr'));
+    document.querySelectorAll('[data-lang]').forEach((btn) => btn.addEventListener('click', () => setLang(btn.dataset.lang)));
   }
 
   window.addEventListener('langchange', () => router.render());

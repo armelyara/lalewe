@@ -1,13 +1,13 @@
 // App-shell service worker. Bump VERSION on every deploy.
-const VERSION = 'lalewe-v5';
+const VERSION = 'lalewe-v3';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'css/tokens.css', 'css/app.css',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
   'vendor/fonts/figtree.woff2', 'vendor/fonts/icons.woff2',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
-  'img/moto.png', 'img/tricycle.png', 'img/fourgon.png', 'img/camion.png', 'img/colis.png',
-  'js/app.js', 'js/file-check.js', 'js/config.js', 'js/i18n.js', 'js/map.js', 'js/router.js', 'js/ui.js',
+  'img/moto.png', 'img/voiture.png', 'img/fourgon.png', 'img/camion.png', 'img/colis.png',
+  'js/app.js', 'js/config.js', 'js/i18n.js', 'js/map.js', 'js/places.js', 'js/flow.js', 'js/router.js', 'js/ui.js',
   'js/domain/geo.js', 'js/domain/pricing.js', 'js/domain/orders.js',
   'js/data/index.js', 'js/data/mock.js', 'js/data/firebase.js',
   'js/views/shared.js', 'js/views/home.js', 'js/views/courier.js', 'js/views/activity.js',

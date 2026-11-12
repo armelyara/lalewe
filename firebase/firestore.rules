@@ -7,7 +7,7 @@ service cloud.firestore {
     function isAdmin() { return signedIn() && me().role == 'admin'; }
     function isMerchant() { return signedIn() && me().role == 'merchant'; }
     function isApprovedCourier() {
-      return signedIn() && me().role == 'courier' && me().courier.status == 'approved';
+      return signedIn() && me().role == 'courier' && me().courierStatus == 'approved';
     }
     function changedOnly(keys) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
@@ -15,35 +15,26 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
-      // Every account starts as a merchant with no courier record.
+      // Every account starts as a merchant.
       allow create: if signedIn() && request.auth.uid == userId
         && request.resource.data.uid == userId
         && request.resource.data.phone == request.auth.token.phone_number
         && request.resource.data.role == 'merchant'
-        && request.resource.data.courier == null;
-      // Phone can never be self-edited. A user may apply as a courier (status
-      // forced to 'pending') and switch mode, but only an admin approves.
+        && request.resource.data.courierStatus == null;
+      // Approval status and phone can never be self-edited. A merchant may
+      // apply as a driver: the role flips and the status starts as 'pending'.
       allow update: if isAdmin()
         || (signedIn() && request.auth.uid == userId && (
           changedOnly(['name', 'businessName', 'commune', 'online'])
-          || (changedOnly(['courier', 'role'])
-              && resource.data.courier == null
+          || (resource.data.role == 'merchant'
               && request.resource.data.role == 'courier'
-              && request.resource.data.courier.status == 'pending')
-          || (changedOnly(['role'])
-              && request.resource.data.role in ['merchant', 'courier']
-              && (request.resource.data.role == 'merchant' || resource.data.courier != null))
+              && request.resource.data.courierStatus == 'pending'
+              && changedOnly(['role', 'courierStatus', 'name', 'vehicleType', 'plate', 'hasLicense']))
         ));
       allow delete: if false;
     }
 
-    // Wallets are written by server code only (Cloud Functions, admin SDK).
-    match /wallets/{userId} {
-      allow read: if signedIn() && request.auth.uid == userId;
-      allow write: if false;
-    }
-
-    // Wallets are written by Cloud Functions only (Admin SDK bypasses rules).
+    // Wallets are written by Cloud Functions only (the Admin SDK bypasses rules).
     match /wallets/{userId} {
       allow read: if signedIn() && request.auth.uid == userId;
       allow write: if false;
@@ -63,7 +54,7 @@ service cloud.firestore {
         && request.resource.data.status == 'pending'
         && request.resource.data.courierId == null
         && request.resource.data.vehicleType == 'moto'
-        && request.resource.data.payer == 'recipient'
+        && request.resource.data.paymentMethod == 'cash_on_delivery'
         && request.resource.data.stops.size() >= 2
         && request.resource.data.stops.size() <= 6
         && request.resource.data.priceTotal is number

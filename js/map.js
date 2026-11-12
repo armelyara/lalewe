@@ -10,13 +10,13 @@ export function createMap(el, { onPick } = {}) {
   const L = globalThis.L;
   if (!L) {
     el.innerHTML = `<p class="map-fallback">${t('home.mapUnavailable')}</p>`;
-    return { setStops() {}, destroy() {} };
+    return { setStops() {}, setRoute() {}, destroy() {} };
   }
   const map = L.map(el, { zoomControl: true, attributionControl: true }).setView(CONFIG.mapCenter, 12);
   L.tileLayer(TILES, { maxZoom: 19, attribution: ATTRIBUTION }).addTo(map);
-  const layer = L.layerGroup().addTo(map);
-  const reduceMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  let frame = 0;
+  const pins = L.layerGroup().addTo(map);
+  const line = L.layerGroup().addTo(map);
+  let points = [];
   let lastKey = '';
 
   // The container gets its final size after the first layout (sticky desktop column).
@@ -28,67 +28,41 @@ export function createMap(el, { onPick } = {}) {
   const dot = (cls, label) =>
     L.divIcon({ className: '', html: `<span class="pin ${cls}">${label}</span>`, iconSize: [28, 28], iconAnchor: [14, 14] });
 
-  // Moves the vehicle image back and forth along the route.
-  function animate(points, marker) {
-    const legs = [];
-    let total = 0;
-    for (let i = 1; i < points.length; i += 1) {
-      const len = map.distance(points[i - 1], points[i]);
-      legs.push({ a: points[i - 1], b: points[i], len });
-      total += len;
-    }
-    if (!total) return;
-    const duration = 6000;
-    const start = performance.now();
-    const step = (now) => {
-      const phase = ((now - start) % (duration * 2)) / duration;
-      let d = (phase <= 1 ? phase : 2 - phase) * total;
-      for (const leg of legs) {
-        if (d <= leg.len || leg === legs[legs.length - 1]) {
-          const k = leg.len ? Math.min(1, d / leg.len) : 0;
-          marker.setLatLng([leg.a[0] + (leg.b[0] - leg.a[0]) * k, leg.a[1] + (leg.b[1] - leg.a[1]) * k]);
-          break;
-        }
-        d -= leg.len;
-      }
-      frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
+  function drawLine(coords, dashed) {
+    line.clearLayers();
+    if (coords.length > 1) L.polyline(coords, { color: '#1E1A16', weight: 5, dashArray: dashed ? '8 8' : null }).addTo(line);
   }
 
   return {
-    // stops: [{ lat, lng } | null], in route order; active: index highlighted.
-    setStops(stops, active = -1, vehicleImage = 'img/moto.png') {
-      cancelAnimationFrame(frame);
-      layer.clearLayers();
-      const points = [];
+    // stops: [{ lat, lng } | null] in route order; active: index highlighted.
+    // Draws a straight dashed line until setRoute() provides the road route.
+    setStops(stops, active = -1) {
+      pins.clearLayers();
+      points = [];
+      const last = stops.length - 1;
       stops.forEach((p, i) => {
         if (!p) return;
-        const cls = `${i === 0 ? 'pin-pickup' : 'pin-drop'}${i === active ? ' pin-active' : ''}`;
-        L.marker([p.lat, p.lng], { icon: dot(cls, i === 0 ? '' : String(i)), keyboard: false }).addTo(layer);
+        const cls = `${i === 0 ? 'pin-pickup' : i === last ? 'pin-last' : ''}${i === active ? ' pin-active' : ''}`;
+        L.marker([p.lat, p.lng], { icon: dot(cls, i === 0 || i === last ? '' : String(i)), keyboard: false }).addTo(pins);
         points.push([p.lat, p.lng]);
       });
-      if (points.length > 1) {
-        L.polyline(points, { color: '#1E1A16', weight: 4, dashArray: '8 8' }).addTo(layer);
-        const vehicle = L.marker(points[0], {
-          icon: L.divIcon({ className: '', html: `<img class="map-vehicle" src="${vehicleImage}" alt="">`, iconSize: [48, 48], iconAnchor: [24, 34] }),
-          interactive: false,
-          keyboard: false,
-        }).addTo(layer);
-        if (!reduceMotion) animate(points, vehicle);
-      }
-      // Re-frame only when the route itself changed, not on every keystroke.
+      drawLine(points, true);
+      // Re-frame only when the points themselves changed.
       const key = JSON.stringify(points);
       if (key !== lastKey && points.length) {
         lastKey = key;
         map.invalidateSize();
-        if (points.length === 1) map.setView(points[0], 13, { animate: false });
-        else map.fitBounds(points, { padding: [40, 40], maxZoom: 14, animate: false });
+        if (points.length === 1) map.setView(points[0], 14, { animate: false });
+        else map.fitBounds(points, { padding: [40, 40], maxZoom: 15, animate: false });
       }
+    },
+    // coords: [[lat, lng], ...] following the roads, or null to keep the straight line.
+    setRoute(coords) {
+      if (coords && coords.length > 1) drawLine(coords, false);
+      else drawLine(points, true);
     },
     destroy() {
       resize.disconnect();
-      cancelAnimationFrame(frame);
       map.remove();
     },
   };

@@ -43,7 +43,7 @@ export function mount(root, ctx, { id }) {
         <div class="card stack">
           ${o.stops.map((s, i) => `
             <div class="stop-line">${stopDot(i, n)}
-              <div class="grow"><span class="hint">${esc(stopLabel(i, n))}</span><strong>${esc(communeName(s.commune))}</strong><span>${esc(s.landmark)}</span>
+              <div class="grow"><span class="hint">${esc(stopLabel(i, n))}</span><strong>${esc(s.landmark)}</strong><span>${esc([communeName(s.commune), s.detail].filter(Boolean).join(' · '))}</span>
                 ${s.contactPhone && (role === 'courier' ? mine : true) ? `<span class="muted">${esc(s.contactPhone)}</span>` : ''}</div>
               ${role === 'courier' && mine && open ? callLink(s.contactPhone) : ''}
             </div>`).join('')}

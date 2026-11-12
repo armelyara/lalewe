@@ -120,13 +120,16 @@ export function createMockAdapter(storage = globalThis.localStorage, session = g
       const user = me(db);
       if (!vehicleById(data.vehicleType)) fail('err.vehicle');
       if (text(data.name, 80).length < 2) fail('err.name');
-      if (text(data.plate, 20).length < 4) fail('err.plate');
+      // Plate and licence are optional for motorbikes, required for other vehicles.
+      const strict = data.vehicleType !== 'moto';
+      if (text(data.plate, 20).length < 4 && (strict || text(data.plate, 20))) fail('err.plate');
+      if (strict && !data.hasLicense) fail('err.license');
       Object.assign(user, {
         role: 'courier',
         name: text(data.name, 80),
-        commune: text(data.commune, 40),
         vehicleType: data.vehicleType,
         plate: text(data.plate, 20).toUpperCase(),
+        hasLicense: Boolean(data.hasLicense),
         // Demo shortcut: drivers are approved instantly. Real approval is manual.
         courierStatus: 'approved',
       });

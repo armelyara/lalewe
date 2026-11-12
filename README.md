@@ -12,7 +12,7 @@ node tests/logic.test.mjs        # tests de la logique métier
 Mode démo (par défaut) : code SMS `0000`, données gardées dans le navigateur. Pour jouer le parcours complet, ouvrez deux onglets :
 
 1. Onglet 1, commerçant : remplir la commande, se connecter, lancer.
-2. Onglet 2, livreur : « Devenir livreur », recharger le portefeuille, passer disponible, accepter, récupérer, saisir le code affiché chez le commerçant.
+2. Onglet 2, livreur : « Devenir livreur » (le numéro saisi sert de connexion), recharger le portefeuille, passer disponible, accepter, récupérer, saisir le code affiché chez le commerçant.
 
 ## Publier sur GitHub Pages
 
@@ -30,6 +30,6 @@ Incrémentez `VERSION` dans `sw.js` à chaque mise en ligne.
 - Leaflet (BSD-2-Clause) : `vendor/leaflet/`
 - Police Figtree (OFL) et sous-ensemble d'icônes Material Symbols (Apache-2.0) : `vendor/fonts/`
 - Images de véhicules : Microsoft Fluent Emoji 3D (MIT)
-- Fond de carte : © contributeurs OpenStreetMap
+- Fond de carte, recherche d'adresses (Photon) et itinéraire (OSRM) : © contributeurs OpenStreetMap, services publics réservés à un usage de démonstration
 
 Architecture, schéma de données et limites connues : `docs/ARCHITECTURE.md`.
