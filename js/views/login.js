@@ -1,10 +1,8 @@
-import { CONFIG } from '../config.js';
 import { t } from '../i18n.js';
 import { esc, formData, run } from '../ui.js';
 
 export function mount(root, ctx) {
   let pending = null;
-  const demo = ctx.data.mode === 'mock';
 
   function renderPhone() {
     root.innerHTML = `
@@ -36,7 +34,6 @@ export function mount(root, ctx) {
           <label>${esc(t('login.code'))}
             <input name="code" class="code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
           </label>
-          ${demo ? `<p class="hint">${esc(t('login.demo', { code: CONFIG.demoOtp }))}</p>` : ''}
           <button class="btn primary big" type="submit">${esc(t('login.continue'))}</button>
           <button class="btn ghost" type="button" id="back">${esc(t('login.change'))}</button>
         </form>

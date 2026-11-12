@@ -63,7 +63,6 @@ async function main() {
     document.getElementById('topnav').setAttribute('aria-label', t('nav.main'));
     document.getElementById('tabbar').setAttribute('aria-label', t('nav.main'));
     document.getElementById('top-actions').innerHTML = `
-      ${data.mode === 'mock' ? `<span class="chip chip-demo">${esc(t('app.demo'))}</span>` : ''}
       <button type="button" class="pill" id="lang" aria-label="${esc(t('lang.switch'))}">${icon('language')}${getLang() === 'fr' ? 'EN' : 'FR'}</button>
       ${ctx.profile
         ? `<a class="pill" href="#/account">${icon('person')}<span class="pill-text">${esc(ctx.profile.name.split(' ')[0] || t('nav.account'))}</span></a>`

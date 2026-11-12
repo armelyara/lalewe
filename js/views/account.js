@@ -20,7 +20,6 @@ export function mount(root, ctx) {
       </form>
       ${courier ? '' : `<a class="btn ghost" href="#/driver">${icon('two_wheeler')}${esc(t('nav.driverLong'))}</a>`}
       <button class="btn ghost" id="signout">${icon('logout')}${esc(t('account.signOut'))}</button>
-      ${ctx.data.resetDemo ? `<button class="btn ghost danger" id="reset">${esc(t('account.reset'))}</button>` : ''}
     </section>`;
 
   root.querySelector('#account-form').addEventListener('submit', (e) => {
@@ -32,11 +31,5 @@ export function mount(root, ctx) {
     });
   });
   root.querySelector('#signout').addEventListener('click', (e) => run(e.currentTarget, () => ctx.data.auth.signOut()));
-  root.querySelector('#reset')?.addEventListener('click', (e) =>
-    run(e.currentTarget, async () => {
-      ctx.data.resetDemo();
-      await ctx.data.auth.signOut();
-    }),
-  );
   return undefined;
 }

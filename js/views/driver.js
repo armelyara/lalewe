@@ -41,7 +41,6 @@ export function mount(root, ctx) {
             <label class="upload">${icon('add_a_photo')}<span>${esc(t(`driver.${doc}`))}</span>
               <input type="file" accept="image/*" capture="environment" data-doc="${doc}"></label>`).join('')}
         </div>
-        ${ctx.data.mode === 'mock' ? `<p class="hint">${icon('info')}${esc(t('driver.docsDemo'))}</p>` : ''}
         <button class="btn primary big" type="submit">${esc(t('driver.submit'))}</button>
         <p class="hint center">${esc(t('driver.note'))}</p>
       </form>

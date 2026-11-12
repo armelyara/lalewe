@@ -29,7 +29,6 @@ export function mount(root, ctx) {
             ${METHODS.map(([id, name]) => `<button type="submit" value="${id}">${esc(name)}</button>`).join('')}
           </div>
         </fieldset>
-        ${ctx.data.mode === 'mock' ? `<p class="hint">${icon('info')}${esc(t('wallet.demo'))}</p>` : ''}
       </form>
       <h2>${esc(t('wallet.history'))}</h2>
       <div id="history" class="card list" aria-live="polite"></div>
