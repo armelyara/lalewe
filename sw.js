@@ -1,5 +1,5 @@
 // App-shell service worker. Bump VERSION on every deploy.
-const VERSION = 'lalewe-v4';
+const VERSION = 'lalewe-v5';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'css/tokens.css', 'css/app.css',

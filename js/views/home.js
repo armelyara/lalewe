@@ -74,8 +74,6 @@ export function mount(root, ctx) {
             </label>
           </div>
         </details>
-        <p class="hint">${icon('payments')}${esc(t('home.payInfo'))}</p>
-        ${ctx.user ? '' : `<p class="hint">${icon('info')}${esc(t('home.guestHint'))}</p>`}
         <div class="quote">
           <div><span class="hint">${esc(t('home.price'))}</span><strong id="quote" aria-live="polite">—</strong></div>
           <button class="btn primary big grow" type="submit">${esc(t('home.launch'))}</button>
