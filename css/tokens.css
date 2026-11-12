@@ -1,0 +1,36 @@
+/* Design tokens taken from the validated Lalewe design board. Text on the
+   orange is near-black: white on this orange is unreadable in sunlight. */
+@font-face {
+  font-family: Figtree;
+  src: url("../vendor/fonts/figtree.woff2") format("woff2");
+  font-weight: 300 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Lalewe Icons";
+  src: url("../vendor/fonts/icons.woff2") format("woff2");
+  font-display: block;
+}
+:root {
+  --brand: #F68713;
+  --brand-dark: #8A4300;
+  --brand-hover: #D96F05;
+  --brand-soft: #FFF1E0;
+  --ink: #1E1A16;
+  --ink-soft: #5E554C;
+  --bg: #FBF7F2;
+  --bg-outer: #EFEAE3;
+  --surface: #FFFFFF;
+  --surface-muted: #F4EFE8;
+  --line: #E6DED3;
+  --line-strong: #CFC5B8;
+  --ok: #14633A;
+  --ok-soft: #DFF3E7;
+  --danger: #A3261A;
+  --danger-soft: #FBE9E6;
+  --radius: 16px;
+  --radius-sm: 12px;
+  --gap: 14px;
+  --font: Figtree, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --topbar: 60px;
+}

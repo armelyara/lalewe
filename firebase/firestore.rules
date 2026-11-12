@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function isAdmin() { return signedIn() && me().role == 'admin'; }
+    function isMerchant() { return signedIn() && me().role == 'merchant'; }
+    function isApprovedCourier() {
+      return signedIn() && me().role == 'courier' && me().courier.status == 'approved';
+    }
+    function changedOnly(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      // Every account starts as a merchant with no courier record.
+      allow create: if signedIn() && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.phone == request.auth.token.phone_number
+        && request.resource.data.role == 'merchant'
+        && request.resource.data.courier == null;
+      // Phone can never be self-edited. A user may apply as a courier (status
+      // forced to 'pending') and switch mode, but only an admin approves.
+      allow update: if isAdmin()
+        || (signedIn() && request.auth.uid == userId && (
+          changedOnly(['name', 'businessName', 'commune', 'online'])
+          || (changedOnly(['courier', 'role'])
+              && resource.data.courier == null
+              && request.resource.data.role == 'courier'
+              && request.resource.data.courier.status == 'pending')
+          || (changedOnly(['role'])
+              && request.resource.data.role in ['merchant', 'courier']
+              && (request.resource.data.role == 'merchant' || resource.data.courier != null))
+        ));
+      allow delete: if false;
+    }
+
+    // Wallets are written by server code only (Cloud Functions, admin SDK).
+    match /wallets/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // Wallets are written by Cloud Functions only (Admin SDK bypasses rules).
+    match /wallets/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    match /orders/{orderId} {
+      allow read: if signedIn() && (
+        resource.data.merchantId == request.auth.uid
+        || resource.data.courierId == request.auth.uid
+        || (resource.data.status == 'pending' && isApprovedCourier())
+        || isAdmin()
+      );
+
+      allow create: if isMerchant()
+        && request.resource.data.id == orderId
+        && request.resource.data.merchantId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.courierId == null
+        && request.resource.data.vehicleType == 'moto'
+        && request.resource.data.payer == 'recipient'
+        && request.resource.data.stops.size() >= 2
+        && request.resource.data.stops.size() <= 6
+        && request.resource.data.priceTotal is number
+        && request.resource.data.priceTotal >= 1000
+        && request.resource.data.podHash is string;
+
+      allow update: if signedIn() && (
+        // Merchant cancels before pickup.
+        (resource.data.merchantId == request.auth.uid
+          && resource.data.status in ['pending', 'accepted']
+          && request.resource.data.status == 'cancelled'
+          && changedOnly(['status', 'cancelledAt', 'updatedAt']))
+        // Courier takes a free order.
+        || (isApprovedCourier()
+          && resource.data.status == 'pending' && resource.data.courierId == null
+          && request.resource.data.status == 'accepted'
+          && request.resource.data.courierId == request.auth.uid
+          && changedOnly(['status', 'courierId', 'courierName', 'courierPhone', 'courierPlate', 'acceptedAt', 'updatedAt']))
+        // Assigned courier picks up.
+        || (resource.data.courierId == request.auth.uid
+          && resource.data.status == 'accepted'
+          && request.resource.data.status == 'picked_up'
+          && changedOnly(['status', 'pickedUpAt', 'updatedAt']))
+        // Assigned courier delivers: must present the recipient's code.
+        || (resource.data.courierId == request.auth.uid
+          && resource.data.status == 'picked_up'
+          && request.resource.data.status == 'delivered'
+          && changedOnly(['status', 'podCode', 'deliveredAt', 'updatedAt'])
+          && hashing.sha256(request.resource.data.podCode + orderId).toHexString() == resource.data.podHash)
+      );
+      allow delete: if false;
+
+      // Delivery code: readable by the merchant only.
+      match /private/{docId} {
+        allow read: if signedIn() && resource.data.merchantId == request.auth.uid;
+        allow create: if signedIn()
+          && request.resource.data.merchantId == request.auth.uid
+          && getAfter(/databases/$(database)/documents/orders/$(orderId)).data.merchantId == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+  }
+}
